@@ -25,6 +25,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   return true;
 });
 
+function safePromise(p) {
+  if (p && typeof p.catch === 'function') {
+    p.catch(() => {});
+  }
+}
+
 function startRefresh(opts) {
   const {
     tabId, interval, showBadge, mode, randomMin, randomMax,
@@ -55,52 +61,53 @@ function startRefresh(opts) {
   let currentInterval = getInterval();
   let countdown = currentInterval;
   let refreshDone = 0;
-  let isAutoRefresh = false; // flag to distinguish extension reloads from manual ones
+  let isAutoRefresh = false;
 
   // Immediate first refresh on start
-  chrome.tabs.get(tabId, (tab) => {
-    if (chrome.runtime.lastError || !tab) return;
-    if (focusTab) chrome.tabs.update(tabId, { active: true });
-    isAutoRefresh = true;
-    // Stealth: never send Cache-Control: no-cache header (hard refresh is detectable)
-    if (hardRefresh && !stealthMode) {
-      chrome.tabs.reload(tabId, { bypassCache: true });
-    } else {
-      chrome.tabs.reload(tabId);
-    }
-    refreshDone++;
-    if (scrollTop) {
-      setTimeout(() => {
-        chrome.scripting.executeScript({
-          target: { tabId },
-          func: () => window.scrollTo({ top: 0, behavior: 'smooth' }),
-        }).catch(() => {});
-      }, 1500);
-    }
-    if (monitorEnabled) {
-      setTimeout(() => injectMonitor(tabId, { monitorSelector, stopOnChange }), 2000);
-    }
-    if (stealthMode) {
-      setTimeout(() => injectHumanActivity(tabId), 2500);
-    }
-    chrome.storage.local.get(['sessions'], (result) => {
-      const sessions = result.sessions || {};
-      if (sessions[tabId]) {
-        sessions[tabId].refreshDone = refreshDone;
-        chrome.storage.local.set({ sessions });
+  try {
+    chrome.tabs.get(tabId).then((tab) => {
+      if (!tab) return;
+      if (focusTab) safePromise(chrome.tabs.update(tabId, { active: true }));
+      isAutoRefresh = true;
+      if (hardRefresh && !stealthMode) {
+        safePromise(chrome.tabs.reload(tabId, { bypassCache: true }));
+      } else {
+        safePromise(chrome.tabs.reload(tabId));
       }
-    });
-    const limitReached = refreshLimitEnabled && refreshDone >= refreshLimitCount;
-    chrome.runtime.sendMessage({ action: 'refreshDone', count: refreshDone, limitReached }).catch(() => {});
-    if (limitReached) {
-      stopRefresh(tabId);
+      refreshDone++;
+      if (scrollTop) {
+        setTimeout(() => {
+          safePromise(chrome.scripting.executeScript({
+            target: { tabId },
+            func: () => window.scrollTo({ top: 0, behavior: 'smooth' }),
+          }));
+        }, 1500);
+      }
+      if (monitorEnabled) {
+        setTimeout(() => injectMonitor(tabId, { monitorSelector, stopOnChange }), 2000);
+      }
+      if (stealthMode) {
+        setTimeout(() => injectHumanActivity(tabId), 2500);
+      }
       chrome.storage.local.get(['sessions'], (result) => {
         const sessions = result.sessions || {};
-        delete sessions[tabId];
-        chrome.storage.local.set({ sessions });
+        if (sessions[tabId]) {
+          sessions[tabId].refreshDone = refreshDone;
+          chrome.storage.local.set({ sessions });
+        }
       });
-    }
-  });
+      const limitReached = refreshLimitEnabled && refreshDone >= refreshLimitCount;
+      safePromise(chrome.runtime.sendMessage({ action: 'refreshDone', count: refreshDone, limitReached }));
+      if (limitReached) {
+        stopRefresh(tabId);
+        chrome.storage.local.get(['sessions'], (result) => {
+          const sessions = result.sessions || {};
+          delete sessions[tabId];
+          chrome.storage.local.set({ sessions });
+        });
+      }
+    }).catch(() => {});
+  } catch (e) {}
 
   if (showBadge) updateBadge(tabId, countdown);
 
@@ -109,77 +116,74 @@ function startRefresh(opts) {
     if (showBadge) updateBadge(tabId, countdown);
 
     if (countdown <= 0) {
-      chrome.tabs.get(tabId, (tab) => {
-        if (chrome.runtime.lastError || !tab) {
-          stopRefresh(tabId);
-          return;
-        }
-
-        // Focus tab if enabled
-        if (focusTab) {
-          chrome.tabs.update(tabId, { active: true });
-        }
-
-        // Hard Refresh (bypass cache) or normal refresh
-        // Stealth: skip bypassCache — the no-cache header is detectable by servers
-        if (timers[tabId]) timers[tabId].isAutoRefresh = true;
-        if (hardRefresh && !stealthMode) {
-          chrome.tabs.reload(tabId, { bypassCache: true });
-        } else {
-          chrome.tabs.reload(tabId);
-        }
-
-        refreshDone++;
-
-        // Scroll to top after reload
-        if (scrollTop) {
-          setTimeout(() => {
-            chrome.scripting.executeScript({
-              target: { tabId },
-              func: () => window.scrollTo({ top: 0, behavior: 'smooth' }),
-            }).catch(() => {});
-          }, 1500);
-        }
-
-        // Monitor injection
-        if (monitorEnabled) {
-          setTimeout(() => {
-            injectMonitor(tabId, { monitorSelector, stopOnChange });
-          }, 2000);
-        }
-        // Stealth: simulate human activity after each reload
-        if (stealthMode) {
-          setTimeout(() => injectHumanActivity(tabId), 2500);
-        }
-
-        // Update session in storage
-        chrome.storage.local.get(['sessions'], (result) => {
-          const sessions = result.sessions || {};
-          if (sessions[tabId]) {
-            sessions[tabId].refreshDone = refreshDone;
-            chrome.storage.local.set({ sessions });
+      try {
+        chrome.tabs.get(tabId).then((tab) => {
+          if (!tab) {
+            stopRefresh(tabId);
+            return;
           }
-        });
 
-        // Notify popup of refresh count
-        const limitReached = refreshLimitEnabled && refreshDone >= refreshLimitCount;
-        chrome.runtime.sendMessage({
-          action: 'refreshDone',
-          count: refreshDone,
-          limitReached,
-        }).catch(() => {});
+          if (focusTab) {
+            safePromise(chrome.tabs.update(tabId, { active: true }));
+          }
 
-        // Stop if limit reached
-        if (limitReached) {
-          stopRefresh(tabId);
+          if (timers[tabId]) timers[tabId].isAutoRefresh = true;
+          if (hardRefresh && !stealthMode) {
+            safePromise(chrome.tabs.reload(tabId, { bypassCache: true }));
+          } else {
+            safePromise(chrome.tabs.reload(tabId));
+          }
+
+          refreshDone++;
+
+          if (scrollTop) {
+            setTimeout(() => {
+              safePromise(chrome.scripting.executeScript({
+                target: { tabId },
+                func: () => window.scrollTo({ top: 0, behavior: 'smooth' }),
+              }));
+            }, 1500);
+          }
+
+          if (monitorEnabled) {
+            setTimeout(() => {
+              injectMonitor(tabId, { monitorSelector, stopOnChange });
+            }, 2000);
+          }
+          if (stealthMode) {
+            setTimeout(() => injectHumanActivity(tabId), 2500);
+          }
+
           chrome.storage.local.get(['sessions'], (result) => {
             const sessions = result.sessions || {};
-            delete sessions[tabId];
-            chrome.storage.local.set({ sessions });
+            if (sessions[tabId]) {
+              sessions[tabId].refreshDone = refreshDone;
+              chrome.storage.local.set({ sessions });
+            }
           });
-          return;
-        }
-      });
+
+          const limitReached = refreshLimitEnabled && refreshDone >= refreshLimitCount;
+          safePromise(chrome.runtime.sendMessage({
+            action: 'refreshDone',
+            count: refreshDone,
+            limitReached,
+          }));
+
+          if (limitReached) {
+            stopRefresh(tabId);
+            chrome.storage.local.get(['sessions'], (result) => {
+              const sessions = result.sessions || {};
+              delete sessions[tabId];
+              chrome.storage.local.set({ sessions });
+            });
+            return;
+          }
+        }).catch(() => {
+          stopRefresh(tabId);
+        });
+      } catch (e) {
+        stopRefresh(tabId);
+      }
 
       currentInterval = getInterval();
       countdown = currentInterval;
@@ -192,12 +196,11 @@ function startRefresh(opts) {
     }
   }, 1000);
 
-  // Stealth: periodic activity heartbeat between refreshes (every ~60s)
   let activityHeartbeat = null;
   if (stealthMode) {
     activityHeartbeat = setInterval(() => {
       injectHumanActivity(tabId);
-    }, 55000 + Math.floor(Math.random() * 20000)); // 55–75s, randomised
+    }, 55000 + Math.floor(Math.random() * 20000));
   }
 
   timers[tabId] = {
@@ -213,13 +216,17 @@ function startRefresh(opts) {
   };
 }
 
-function stopRefresh(tabId) {
+function stopRefresh(tabId, isClosed = false) {
   if (timers[tabId]) {
     clearInterval(timers[tabId].intervalId);
     if (timers[tabId].activityHeartbeat) clearInterval(timers[tabId].activityHeartbeat);
     delete timers[tabId];
   }
-  try { chrome.action.setBadgeText({ text: '', tabId }); } catch(e) {}
+  if (!isClosed && tabId) {
+    try {
+      safePromise(chrome.action.setBadgeText({ text: '', tabId }));
+    } catch(e) {}
+  }
 }
 
 function stopAll() {
@@ -235,55 +242,57 @@ function updateBadge(tabId, seconds) {
   } else {
     text = Math.ceil(seconds / 60) + 'm';
   }
-  chrome.action.setBadgeText({ text, tabId });
-  chrome.action.setBadgeBackgroundColor({ color: '#00c896', tabId });
+  try {
+    safePromise(chrome.action.setBadgeText({ text, tabId }));
+    safePromise(chrome.action.setBadgeBackgroundColor({ color: '#00c896', tabId }));
+  } catch(e) {}
 }
 
 function injectMonitor(tabId, opts) {
-  chrome.scripting.executeScript({
-    target: { tabId },
-    func: monitorPageChange,
-    args: [opts.monitorSelector, opts.stopOnChange],
-  }).catch(() => {});
+  try {
+    safePromise(chrome.scripting.executeScript({
+      target: { tabId },
+      func: monitorPageChange,
+      args: [opts.monitorSelector, opts.stopOnChange],
+    }));
+  } catch(e) {}
 }
 
-// Stealth Mode: inject realistic human activity events into the page
 function injectHumanActivity(tabId) {
-  chrome.scripting.executeScript({
-    target: { tabId },
-    func: () => {
-      try {
-        // Random mouse positions across the visible viewport
-        const moves = 4 + Math.floor(Math.random() * 4);
-        for (let i = 0; i < moves; i++) {
+  try {
+    safePromise(chrome.scripting.executeScript({
+      target: { tabId },
+      func: () => {
+        try {
+          const moves = 4 + Math.floor(Math.random() * 4);
+          for (let i = 0; i < moves; i++) {
+            setTimeout(() => {
+              const x = Math.floor(Math.random() * window.innerWidth);
+              const y = Math.floor(Math.random() * window.innerHeight);
+              document.dispatchEvent(new MouseEvent('mousemove', {
+                bubbles: true, cancelable: true,
+                clientX: x, clientY: y,
+                screenX: x + window.screenX, screenY: y + window.screenY
+              }));
+            }, i * (300 + Math.floor(Math.random() * 400)));
+          }
           setTimeout(() => {
-            const x = Math.floor(Math.random() * window.innerWidth);
-            const y = Math.floor(Math.random() * window.innerHeight);
-            document.dispatchEvent(new MouseEvent('mousemove', {
-              bubbles: true, cancelable: true,
-              clientX: x, clientY: y,
-              screenX: x + window.screenX, screenY: y + window.screenY
+            const amount = 40 + Math.floor(Math.random() * 80);
+            window.scrollBy({ top: amount, behavior: 'smooth' });
+            setTimeout(() => window.scrollBy({ top: -amount, behavior: 'smooth' }), 800);
+          }, 1200);
+          setTimeout(() => {
+            document.dispatchEvent(new KeyboardEvent('keydown', {
+              bubbles: true, cancelable: true, key: 'Shift', code: 'ShiftLeft', shiftKey: true
             }));
-          }, i * (300 + Math.floor(Math.random() * 400)));
-        }
-        // Subtle scroll — small random amount, then back
-        setTimeout(() => {
-          const amount = 40 + Math.floor(Math.random() * 80);
-          window.scrollBy({ top: amount, behavior: 'smooth' });
-          setTimeout(() => window.scrollBy({ top: -amount, behavior: 'smooth' }), 800);
-        }, 1200);
-        // Fire a non-destructive keydown (Shift) to signal keyboard presence
-        setTimeout(() => {
-          document.dispatchEvent(new KeyboardEvent('keydown', {
-            bubbles: true, cancelable: true, key: 'Shift', code: 'ShiftLeft', shiftKey: true
-          }));
-          document.dispatchEvent(new KeyboardEvent('keyup', {
-            bubbles: true, cancelable: true, key: 'Shift', code: 'ShiftLeft', shiftKey: false
-          }));
-        }, 2000);
-      } catch(e) {}
-    },
-  }).catch(() => {});
+            document.dispatchEvent(new KeyboardEvent('keyup', {
+              bubbles: true, cancelable: true, key: 'Shift', code: 'ShiftLeft', shiftKey: false
+            }));
+          }, 2000);
+        } catch(e) {}
+      },
+    }));
+  } catch(e) {}
 }
 
 function monitorPageChange(selector, stopOnChange) {
@@ -303,18 +312,21 @@ function monitorPageChange(selector, stopOnChange) {
   setTimeout(() => {
     const current = getContent();
     if (current !== initial) {
-      chrome.runtime.sendMessage({
-        action: 'pageChanged',
-        tabId: null,
-        options: { stopOnChange }
-      });
+      try {
+        const p = chrome.runtime.sendMessage({
+          action: 'pageChanged',
+          tabId: null,
+          options: { stopOnChange }
+        });
+        if (p && typeof p.catch === 'function') p.catch(() => {});
+      } catch(e) {}
     }
     window[key] = false;
   }, 1500);
 }
 
 function handlePageChange(tabId, options) {
-  if (options && options.stopOnChange) {
+  if (options && options.stopOnChange && tabId) {
     stopRefresh(tabId);
     chrome.storage.local.get(['sessions'], (result) => {
       const sessions = result.sessions || {};
@@ -326,7 +338,7 @@ function handlePageChange(tabId, options) {
 
 // Cleanup on tab close
 chrome.tabs.onRemoved.addListener((tabId) => {
-  stopRefresh(tabId);
+  stopRefresh(tabId, true); // true = isClosed, do not update badge
   chrome.storage.local.get(['sessions'], (result) => {
     const sessions = result.sessions || {};
     if (sessions[tabId]) {
@@ -343,12 +355,10 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
   if (!t) return;
 
   if (t.isAutoRefresh) {
-    // This was triggered by the extension — clear the flag and ignore
     t.isAutoRefresh = false;
     return;
   }
 
-  // Manual refresh detected — pick a new random interval and reset countdown
   const newInterval = t.getInterval();
   t.countdown = newInterval;
   t.interval = newInterval;
