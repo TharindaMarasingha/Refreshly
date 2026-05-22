@@ -51,23 +51,69 @@ A live countdown badge on the extension icon shows the seconds remaining until t
 
 ## Installation
 
-### From Source
+> **No technical knowledge required!** Just follow the steps below — it takes less than 2 minutes.
 
-1. Clone or download this repository.
-2. Open Chrome and navigate to `chrome://extensions`.
-3. Enable **Developer mode** (top-right toggle).
-4. Click **Load unpacked** and select the project folder.
+---
 
-### Permissions Required
+### Step 1 — Download Refreshly
 
-| Permission | Purpose |
+1. Go to the Refreshly GitHub page: [github.com/TharindaMarasingha](https://github.com/TharindaMarasingha)
+2. Find the **Refreshly** repository and open it.
+3. Click the green **`< > Code`** button near the top-right of the page.
+4. Select **Download ZIP** from the dropdown.
+5. Save the ZIP file somewhere easy to find (e.g. your Desktop).
+
+---
+
+### Step 2 — Extract the ZIP
+
+1. Find the downloaded ZIP file (e.g. `Refreshly-main.zip`).
+2. **Right-click** it and choose **Extract All…** (Windows) or double-click it (Mac).
+3. Choose a destination folder and click **Extract**.
+4. You should now have a folder called `Refreshly-main` (or similar).
+
+---
+
+### Step 3 — Load into Chrome
+
+1. Open **Google Chrome**.
+2. In the address bar, type `chrome://extensions` and press **Enter**.
+3. In the top-right corner of that page, turn on the **Developer mode** toggle.
+
+   > ⚠️ Don't worry — this is safe! Developer mode simply allows you to install extensions from your own computer instead of the Chrome Web Store.
+
+4. Click the **Load unpacked** button that appears on the left.
+5. In the file picker, navigate to and select the **Refreshly-main** folder you extracted in Step 2.
+6. Click **Select Folder**.
+
+✅ **Done!** The Refreshly icon will appear in your Chrome toolbar. Click it to start auto-refreshing pages.
+
+---
+
+### Troubleshooting
+
+| Problem | Fix |
 |---|---|
-| `tabs` | Query and reload browser tabs |
-| `storage` | Persist settings and session state |
-| `activeTab` | Access the currently focused tab |
-| `scripting` | Inject activity simulation and monitor scripts |
-| `alarms` | Reserved for future background scheduling |
-| `<all_urls>` | Operate on any website |
+| "Load unpacked" button not visible | Make sure **Developer mode** is turned **on** (top-right toggle) |
+| Extension doesn't appear in toolbar | Click the 🧩 puzzle icon in Chrome's toolbar, then pin Refreshly |
+| Nothing happens when I click Start | Make sure you are on a regular web page (not `chrome://` pages) |
+| Extension disappeared after Chrome update | Go back to `chrome://extensions` and click the **reload ↺** icon on the Refreshly card |
+
+---
+
+### Permissions Explained
+
+Chrome will ask for these permissions — here is exactly what each one does and why it is needed:
+
+| Permission | Plain-English Meaning |
+|---|---|
+| `tabs` | Lets Refreshly see which tab you want to refresh |
+| `storage` | Remembers your settings (interval, options) between sessions |
+| `activeTab` | Lets Refreshly act on the tab you currently have open |
+| `scripting` | Needed for Stealth Mode and page change detection |
+| `alarms` | Keeps timers running reliably in the background |
+| `<all_urls>` | Allows Refreshly to work on any website you visit |
+
 
 ---
 
