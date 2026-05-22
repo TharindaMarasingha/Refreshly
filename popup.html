@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Auto Refresh Pro</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-left">
+        <div class="logo">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <circle cx="14" cy="14" r="13" fill="#1a2a3a" stroke="#00c896" stroke-width="1.5"/>
+            <path d="M14 7v4l3 3-3 3v4" stroke="#00c896" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M8 10.5A7 7 0 0 1 20.5 14" stroke="#00c896" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M20 17.5A7 7 0 0 1 7.5 14" stroke="#00c896" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="header-info">
+          <span class="app-name">Auto Refresh Pro</span>
+          <span class="app-version">v1.0.0</span>
+        </div>
+      </div>
+      <button class="start-btn" id="startBtn">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path id="startIcon" d="M3 2l8 5-8 5V2z" fill="white"/>
+        </svg>
+        <span id="startLabel">Start</span>
+      </button>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="tab-nav">
+      <button class="tab-btn active" data-tab="interval">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M7 4v3l2 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        Interval
+      </button>
+      <button class="tab-btn" data-tab="timer">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <circle cx="7" cy="8" r="4.5" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M7 3.5V2M5.5 2h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          <path d="M7 6v2l1.5 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        Timer
+      </button>
+      <button class="tab-btn" data-tab="tabs">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <rect x="1" y="4" width="12" height="8" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M1 6h12M4 2h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        Tabs
+      </button>
+      <button class="tab-btn" data-tab="monitor">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <rect x="1" y="2" width="12" height="8" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M5 12h4M7 10v2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          <path d="M4 7l2-2 2 2 2-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Monitor
+      </button>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+
+      <!-- INTERVAL TAB -->
+      <div class="tab-panel active" id="tab-interval">
+        <div class="section">
+          <div class="section-title">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <circle cx="7" cy="7" r="5.5" stroke="#00c896" stroke-width="1.3"/>
+              <path d="M7 4v3l2 2" stroke="#00c896" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+            Refresh Interval Mode
+          </div>
+          <div class="mode-cards">
+            <div class="mode-card active" data-mode="predefined">
+              <div class="mode-check">✓</div>
+              <div class="mode-title">Predefined Interval</div>
+              <div class="mode-desc">Use preset or default time values</div>
+            </div>
+            <div class="mode-card" data-mode="custom">
+              <div class="mode-check">✓</div>
+              <div class="mode-title">Custom Interval</div>
+              <div class="mode-desc">Set exact hours, minutes, and seconds</div>
+            </div>
+            <div class="mode-card" data-mode="random">
+              <div class="mode-check">✓</div>
+              <div class="mode-title">Random Interval</div>
+              <div class="mode-desc">Random refresh between min–max</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Predefined Intervals -->
+        <div class="section" id="predefined-section">
+          <div class="section-title">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <circle cx="7" cy="7" r="5.5" stroke="#8ab4cc" stroke-width="1.3"/>
+              <path d="M7 4v3l2 2" stroke="#8ab4cc" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+            Choose Time Interval
+          </div>
+          <div class="sub-label">PRESET INTERVALS</div>
+          <div class="preset-grid" id="presetGrid">
+            <button class="preset-btn" data-seconds="5">5s</button>
+            <button class="preset-btn" data-seconds="10">10s</button>
+            <button class="preset-btn" data-seconds="15">15s</button>
+            <button class="preset-btn active" data-seconds="30">30s</button>
+            <button class="preset-btn" data-seconds="60">1m</button>
+            <button class="preset-btn" data-seconds="120">2m</button>
+            <button class="preset-btn" data-seconds="300">5m</button>
+            <button class="preset-btn" data-seconds="600">10m</button>
+            <button class="preset-btn" data-seconds="900">15m</button>
+            <button class="preset-btn" data-seconds="1800">30m</button>
+            <button class="preset-btn" data-seconds="3600">1h</button>
+            <button class="preset-btn" data-seconds="7200">2h</button>
+          </div>
+        </div>
+
+        <!-- Custom Interval -->
+        <div class="section hidden" id="custom-section">
+          <div class="section-title">Set Custom Interval</div>
+          <div class="time-inputs">
+            <div class="time-field">
+              <input type="number" id="customHours" min="0" max="23" value="0" placeholder="0"/>
+              <label>Hours</label>
+            </div>
+            <div class="time-sep">:</div>
+            <div class="time-field">
+              <input type="number" id="customMinutes" min="0" max="59" value="0" placeholder="0"/>
+              <label>Minutes</label>
+            </div>
+            <div class="time-sep">:</div>
+            <div class="time-field">
+              <input type="number" id="customSeconds" min="1" max="59" value="30" placeholder="30"/>
+              <label>Seconds</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Random Interval -->
+        <div class="section hidden" id="random-section">
+          <div class="section-title">Set Random Range</div>
+          <div class="random-inputs">
+            <div class="random-field">
+              <label>Min (seconds)</label>
+              <input type="number" id="randomMin" min="1" value="10"/>
+            </div>
+            <div class="random-arrow">→</div>
+            <div class="random-field">
+              <label>Max (seconds)</label>
+              <input type="number" id="randomMax" min="2" value="60"/>
+            </div>
+          </div>
+        </div>
+
+        <!-- Options -->
+        <div class="section">
+          <div class="section-title">Options</div>
+          <div class="options-list">
+
+            <!-- Hard Refresh -->
+            <label class="toggle-row" id="hardRefreshRow">
+              <div class="toggle-label-group">
+                <span>Hard Refresh</span>
+                <span class="toggle-hint">Reload without cached data</span>
+              </div>
+              <div class="toggle" id="hardRefreshToggle">
+                <div class="toggle-thumb"></div>
+              </div>
+            </label>
+
+            <!-- Set Refresh Number -->
+            <label class="toggle-row">
+              <div class="toggle-label-group">
+                <span>Set Refresh Number</span>
+                <span class="toggle-hint">Stop after N refreshes (0 = unlimited)</span>
+              </div>
+              <div class="toggle" id="refreshLimitToggle">
+                <div class="toggle-thumb"></div>
+              </div>
+            </label>
+            <div class="sub-option hidden" id="refreshLimitInput">
+              <input type="number" class="inline-input" id="refreshLimitCount" min="1" max="9999" value="10" placeholder="10"/>
+              <span class="inline-label">refreshes then stop</span>
+              <div class="refresh-counter" id="refreshCounter">Done: <b id="refreshDoneCount">0</b></div>
+            </div>
+
+            <!-- Focus tab before refresh -->
+            <label class="toggle-row">
+              <div class="toggle-label-group">
+                <span>Focus Tab on Refresh</span>
+                <span class="toggle-hint">Switch to tab when refreshing</span>
+              </div>
+              <div class="toggle" id="focusTabToggle">
+                <div class="toggle-thumb"></div>
+              </div>
+            </label>
+
+            <!-- Scroll to top after refresh -->
+            <label class="toggle-row">
+              <div class="toggle-label-group">
+                <span>Scroll to Top After Refresh</span>
+                <span class="toggle-hint">Auto-scroll up on each reload</span>
+              </div>
+              <div class="toggle" id="scrollTopToggle">
+                <div class="toggle-thumb"></div>
+              </div>
+            </label>
+
+            <label class="toggle-row">
+              <span>Only refresh active tab</span>
+              <div class="toggle" id="activeTabToggle">
+                <div class="toggle-thumb"></div>
+              </div>
+            </label>
+            <label class="toggle-row">
+              <span>Auto-start on page load</span>
+              <div class="toggle" id="autoStartToggle">
+                <div class="toggle-thumb"></div>
+              </div>
+            </label>
+            <label class="toggle-row">
+              <span>Show countdown badge</span>
+              <div class="toggle active" id="badgeToggle">
+                <div class="toggle-thumb"></div>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- TIMER TAB -->
+      <div class="tab-panel hidden" id="tab-timer">
+        <div class="section">
+          <div class="section-title">One-Shot Timer</div>
+          <p class="section-desc">Refresh the page once after a set countdown.</p>
+          <div class="time-inputs">
+            <div class="time-field">
+              <input type="number" id="timerHours" min="0" max="23" value="0"/>
+              <label>Hours</label>
+            </div>
+            <div class="time-sep">:</div>
+            <div class="time-field">
+              <input type="number" id="timerMinutes" min="0" max="59" value="5"/>
+              <label>Minutes</label>
+            </div>
+            <div class="time-sep">:</div>
+            <div class="time-field">
+              <input type="number" id="timerSeconds" min="0" max="59" value="0"/>
+              <label>Seconds</label>
+            </div>
+          </div>
+          <div class="timer-display" id="timerDisplay">Ready</div>
+          <button class="action-btn" id="timerStartBtn">Start Timer</button>
+        </div>
+      </div>
+
+      <!-- TABS TAB -->
+      <div class="tab-panel hidden" id="tab-tabs">
+        <div class="section">
+          <div class="section-title">Active Refresh Sessions</div>
+          <div id="tabsList" class="tabs-list">
+            <div class="empty-state">No active refresh sessions.<br/>Start refreshing from the Interval tab.</div>
+          </div>
+        </div>
+        <div class="section">
+          <button class="action-btn danger" id="stopAllBtn">Stop All Sessions</button>
+        </div>
+      </div>
+
+      <!-- MONITOR TAB -->
+      <div class="tab-panel hidden" id="tab-monitor">
+        <div class="section">
+          <div class="section-title">Page Change Monitor</div>
+          <p class="section-desc">Refresh and alert when the page content changes.</p>
+          <div class="options-list">
+            <label class="toggle-row">
+              <span>Enable change detection</span>
+              <div class="toggle" id="monitorToggle">
+                <div class="toggle-thumb"></div>
+              </div>
+            </label>
+            <label class="toggle-row">
+              <span>Play sound on change</span>
+              <div class="toggle" id="soundToggle">
+                <div class="toggle-thumb"></div>
+              </div>
+            </label>
+            <label class="toggle-row">
+              <span>Stop refresh on change</span>
+              <div class="toggle active" id="stopOnChangeToggle">
+                <div class="toggle-thumb"></div>
+              </div>
+            </label>
+          </div>
+          <div class="sub-label" style="margin-top:12px;">CSS SELECTOR TO MONITOR (optional)</div>
+          <input type="text" class="text-input" id="monitorSelector" placeholder="e.g. #price, .stock-status"/>
+          <div class="monitor-status" id="monitorStatus">
+            <div class="status-dot"></div>
+            <span>Not monitoring</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <div class="status-info" id="statusInfo">
+        <div class="status-dot inactive"></div>
+        <span>Idle</span>
+      </div>
+      <div class="next-refresh" id="nextRefresh"></div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
