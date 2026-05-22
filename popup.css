@@ -715,3 +715,34 @@ body {
   color: var(--accent);
   border: 1px solid var(--border-accent);
 }
+
+/* DEVELOPER FOOTER */
+.dev-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  background: #0b121a;
+  border-top: 1px solid var(--border);
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.dev-footer a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.dev-footer a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.dev-sep {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
