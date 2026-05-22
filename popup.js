@@ -9,6 +9,7 @@ let state = {
   autoStart: false,
   showBadge: true,
   hardRefresh: false,
+  stealthMode: false,
   refreshLimitEnabled: false,
   refreshLimitCount: 10,
   refreshDoneCount: 0,
@@ -106,6 +107,7 @@ function renderToggles() {
   setToggle('autoStartToggle', state.autoStart);
   setToggle('badgeToggle', state.showBadge);
   setToggle('hardRefreshToggle', state.hardRefresh);
+  setToggle('stealthModeToggle', state.stealthMode);
   setToggle('refreshLimitToggle', state.refreshLimitEnabled);
   setToggle('focusTabToggle', state.focusTab);
   setToggle('scrollTopToggle', state.scrollTop);
@@ -239,6 +241,14 @@ function bindEvents() {
     if (state.isRunning) restartRefresh();
   });
 
+  // Stealth Mode toggle
+  document.getElementById('stealthModeToggle').addEventListener('click', () => {
+    state.stealthMode = !state.stealthMode;
+    setToggle('stealthModeToggle', state.stealthMode);
+    saveState();
+    if (state.isRunning) restartRefresh();
+  });
+
   // Refresh limit toggle
   document.getElementById('refreshLimitToggle').addEventListener('click', () => {
     state.refreshLimitEnabled = !state.refreshLimitEnabled;
@@ -325,6 +335,7 @@ async function startRefresh() {
     tabId: tab.id,
     interval: interval,
     hardRefresh: state.hardRefresh,
+    stealthMode: state.stealthMode,
     refreshLimitEnabled: state.refreshLimitEnabled,
     refreshLimitCount: state.refreshLimitCount,
     focusTab: state.focusTab,

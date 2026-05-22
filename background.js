@@ -29,23 +29,78 @@ function startRefresh(opts) {
   const {
     tabId, interval, showBadge, mode, randomMin, randomMax,
     hardRefresh, refreshLimitEnabled, refreshLimitCount,
-    focusTab, scrollTop, monitorEnabled, monitorSelector, stopOnChange
+    focusTab, scrollTop, monitorEnabled, monitorSelector, stopOnChange,
+    stealthMode
   } = opts;
 
   stopRefresh(tabId);
 
   const getInterval = () => {
+    let base;
     if (mode === 'random') {
       const min = randomMin || 10;
       const max = randomMax || 60;
-      return Math.floor(Math.random() * (max - min + 1)) + min;
+      base = Math.floor(Math.random() * (max - min + 1)) + min;
+    } else {
+      base = interval;
     }
-    return interval;
+    // Stealth: add ±20% human-like jitter to every interval
+    if (stealthMode) {
+      const jitter = base * 0.2;
+      base = Math.round(base + (Math.random() * jitter * 2 - jitter));
+    }
+    return Math.max(base, 1);
   };
 
   let currentInterval = getInterval();
   let countdown = currentInterval;
   let refreshDone = 0;
+  let isAutoRefresh = false; // flag to distinguish extension reloads from manual ones
+
+  // Immediate first refresh on start
+  chrome.tabs.get(tabId, (tab) => {
+    if (chrome.runtime.lastError || !tab) return;
+    if (focusTab) chrome.tabs.update(tabId, { active: true });
+    isAutoRefresh = true;
+    // Stealth: never send Cache-Control: no-cache header (hard refresh is detectable)
+    if (hardRefresh && !stealthMode) {
+      chrome.tabs.reload(tabId, { bypassCache: true });
+    } else {
+      chrome.tabs.reload(tabId);
+    }
+    refreshDone++;
+    if (scrollTop) {
+      setTimeout(() => {
+        chrome.scripting.executeScript({
+          target: { tabId },
+          func: () => window.scrollTo({ top: 0, behavior: 'smooth' }),
+        }).catch(() => {});
+      }, 1500);
+    }
+    if (monitorEnabled) {
+      setTimeout(() => injectMonitor(tabId, { monitorSelector, stopOnChange }), 2000);
+    }
+    if (stealthMode) {
+      setTimeout(() => injectHumanActivity(tabId), 2500);
+    }
+    chrome.storage.local.get(['sessions'], (result) => {
+      const sessions = result.sessions || {};
+      if (sessions[tabId]) {
+        sessions[tabId].refreshDone = refreshDone;
+        chrome.storage.local.set({ sessions });
+      }
+    });
+    const limitReached = refreshLimitEnabled && refreshDone >= refreshLimitCount;
+    chrome.runtime.sendMessage({ action: 'refreshDone', count: refreshDone, limitReached }).catch(() => {});
+    if (limitReached) {
+      stopRefresh(tabId);
+      chrome.storage.local.get(['sessions'], (result) => {
+        const sessions = result.sessions || {};
+        delete sessions[tabId];
+        chrome.storage.local.set({ sessions });
+      });
+    }
+  });
 
   if (showBadge) updateBadge(tabId, countdown);
 
@@ -66,7 +121,9 @@ function startRefresh(opts) {
         }
 
         // Hard Refresh (bypass cache) or normal refresh
-        if (hardRefresh) {
+        // Stealth: skip bypassCache — the no-cache header is detectable by servers
+        if (timers[tabId]) timers[tabId].isAutoRefresh = true;
+        if (hardRefresh && !stealthMode) {
           chrome.tabs.reload(tabId, { bypassCache: true });
         } else {
           chrome.tabs.reload(tabId);
@@ -89,6 +146,10 @@ function startRefresh(opts) {
           setTimeout(() => {
             injectMonitor(tabId, { monitorSelector, stopOnChange });
           }, 2000);
+        }
+        // Stealth: simulate human activity after each reload
+        if (stealthMode) {
+          setTimeout(() => injectHumanActivity(tabId), 2500);
         }
 
         // Update session in storage
@@ -131,11 +192,23 @@ function startRefresh(opts) {
     }
   }, 1000);
 
+  // Stealth: periodic activity heartbeat between refreshes (every ~60s)
+  let activityHeartbeat = null;
+  if (stealthMode) {
+    activityHeartbeat = setInterval(() => {
+      injectHumanActivity(tabId);
+    }, 55000 + Math.floor(Math.random() * 20000)); // 55–75s, randomised
+  }
+
   timers[tabId] = {
     intervalId: tick,
+    activityHeartbeat,
     countdown,
     interval: currentInterval,
     refreshDone,
+    isAutoRefresh,
+    getInterval,
+    showBadge,
     options: opts,
   };
 }
@@ -143,6 +216,7 @@ function startRefresh(opts) {
 function stopRefresh(tabId) {
   if (timers[tabId]) {
     clearInterval(timers[tabId].intervalId);
+    if (timers[tabId].activityHeartbeat) clearInterval(timers[tabId].activityHeartbeat);
     delete timers[tabId];
   }
   try { chrome.action.setBadgeText({ text: '', tabId }); } catch(e) {}
@@ -170,6 +244,45 @@ function injectMonitor(tabId, opts) {
     target: { tabId },
     func: monitorPageChange,
     args: [opts.monitorSelector, opts.stopOnChange],
+  }).catch(() => {});
+}
+
+// Stealth Mode: inject realistic human activity events into the page
+function injectHumanActivity(tabId) {
+  chrome.scripting.executeScript({
+    target: { tabId },
+    func: () => {
+      try {
+        // Random mouse positions across the visible viewport
+        const moves = 4 + Math.floor(Math.random() * 4);
+        for (let i = 0; i < moves; i++) {
+          setTimeout(() => {
+            const x = Math.floor(Math.random() * window.innerWidth);
+            const y = Math.floor(Math.random() * window.innerHeight);
+            document.dispatchEvent(new MouseEvent('mousemove', {
+              bubbles: true, cancelable: true,
+              clientX: x, clientY: y,
+              screenX: x + window.screenX, screenY: y + window.screenY
+            }));
+          }, i * (300 + Math.floor(Math.random() * 400)));
+        }
+        // Subtle scroll — small random amount, then back
+        setTimeout(() => {
+          const amount = 40 + Math.floor(Math.random() * 80);
+          window.scrollBy({ top: amount, behavior: 'smooth' });
+          setTimeout(() => window.scrollBy({ top: -amount, behavior: 'smooth' }), 800);
+        }, 1200);
+        // Fire a non-destructive keydown (Shift) to signal keyboard presence
+        setTimeout(() => {
+          document.dispatchEvent(new KeyboardEvent('keydown', {
+            bubbles: true, cancelable: true, key: 'Shift', code: 'ShiftLeft', shiftKey: true
+          }));
+          document.dispatchEvent(new KeyboardEvent('keyup', {
+            bubbles: true, cancelable: true, key: 'Shift', code: 'ShiftLeft', shiftKey: false
+          }));
+        }, 2000);
+      } catch(e) {}
+    },
   }).catch(() => {});
 }
 
@@ -221,4 +334,23 @@ chrome.tabs.onRemoved.addListener((tabId) => {
       chrome.storage.local.set({ sessions });
     }
   });
+});
+
+// Detect manual refreshes: pick a new random interval and reset countdown
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  if (changeInfo.status !== 'loading') return;
+  const t = timers[tabId];
+  if (!t) return;
+
+  if (t.isAutoRefresh) {
+    // This was triggered by the extension — clear the flag and ignore
+    t.isAutoRefresh = false;
+    return;
+  }
+
+  // Manual refresh detected — pick a new random interval and reset countdown
+  const newInterval = t.getInterval();
+  t.countdown = newInterval;
+  t.interval = newInterval;
+  if (t.showBadge) updateBadge(tabId, newInterval);
 });

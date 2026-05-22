@@ -1,0 +1,28 @@
+# ─── Packaged Extension Builds ──────────────────────────────────────────────
+Refreshly-crx/
+*.pem
+*.zip
+
+# ─── OS Files ────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Editor & IDE ────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.suo
+*.user
+*.swp
+*.swo
+*~
+
+# ─── Node (if tooling is ever added) ─────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-error.log*
+.env
+.env.local
+
+# ─── Logs ────────────────────────────────────────────────────────────────────
+*.log
