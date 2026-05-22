@@ -1,8 +1,10 @@
 {
   "manifest_version": 3,
-  "name": "Auto Refresh Pro",
+  "name": "Refreshly",
   "version": "1.0.0",
   "description": "Auto refresh pages with interval, timer, tabs, and monitor modes. Free forever.",
+  "author": "Tharinda Marasingha",
+  "homepage_url": "https://tharinda.me",
   "permissions": [
     "tabs",
     "alarms",

@@ -1,4 +1,4 @@
-# Refreshly — Auto Refresh Pro
+# Refreshly
 
 > A lightweight Chrome extension that keeps your tabs fresh — automatically, intelligently, and on your schedule.
 
@@ -108,7 +108,7 @@ This extension uses no build tools or external dependencies. All logic is writte
 
 To make changes:
 1. Edit the relevant source file.
-2. Go to `chrome://extensions` and click the **reload icon** on the Refreshly card.
+2. Go to `chrome://extensions` and click the **reload icon** on the **Refreshly** card.
 3. Reopen the popup to see your changes.
 
 ---
@@ -116,3 +116,10 @@ To make changes:
 ## License
 
 MIT — free to use, modify, and distribute.
+
+---
+
+## Developer
+
+Built with ♥️ by **Tharinda Marasingha** — [tharinda.me](https://tharinda.me) · [GitHub](https://github.com/TharindaMarasingha)
+
